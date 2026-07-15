@@ -7,13 +7,21 @@ import pathlib
 import json
 import os
 import time
+from datetime import datetime, timedelta
+from pathlib import Path
 
 load_dotenv()
 API_KEY = os.getenv("API_KEY")
 symbols = ["AUD/USD", "EUR/USD", "EUR/JPY", "GBP/USD", "USD/JPY", "USD/CAD",
             "BTC/USD"]
+now = datetime.now() - timedelta(days=1)
+start_date_custom_time = now.replace(hour=14, minute=7, second=0, microsecond=0)
+end_date_custom_time = now.replace(hour=14, minute=8, second=0, microsecond=0)
 
-def fetch_price_data(symbol , api_key):
+start_date = start_date_custom_time.isoformat()
+end_date = end_date_custom_time.isoformat()
+
+def fetch_price_data(symbol , api_key, start_date, end_date):
 
     BASE_URL = (
         "https://api.twelvedata.com/time_series"
@@ -22,8 +30,8 @@ def fetch_price_data(symbol , api_key):
         "&interval=1min" +
         "&outputsize=1" +
         "&timezone=America/Argentina/Rio_Gallegos" +
-        "&start_date=2026-07-12T14:07:00" +
-        "&end_date=2026-07-12T14:08:00" +
+        "&start_date=" + start_date +
+        "&end_date=" + end_date +
         "&format=JSON"
     )
 
@@ -41,12 +49,12 @@ def fetch_price_data(symbol , api_key):
         print(f"API returned an error: {e}")
         return None
 
-def fetch_watchlist_data(symbols, api_key):
+def fetch_watchlist_data(symbols, api_key, start_date, end_date):
 
     watchlist_data = {}
 
     for symbol in symbols:
-        response = fetch_price_data(symbol, api_key)
+        response = fetch_price_data(symbol, api_key, start_date, end_date)
         if not response:
             print(f"Could not fetch: {symbol} data")
             continue
@@ -56,4 +64,20 @@ def fetch_watchlist_data(symbols, api_key):
     return watchlist_data
 
 
-watch_data = fetch_watchlist_data(symbols, API_KEY)
+watchlist_data = fetch_watchlist_data(symbols, API_KEY, start_date, end_date)
+
+
+data = Path.cwd() / "data" / "raw"
+raw_data_file_name = f"{str(now.date())}_raw.json"
+
+if not data.exists():
+    data.mkdir(parents=True, exist_ok=True)
+
+try:
+    with open(data/raw_data_file_name, "w") as file:
+        json.dump(watchlist_data, file)
+    print(f"{raw_data_file_name} written to {data}")
+except OSError as e:
+    print(f"Failed to write Json file: {e}")
+
+
