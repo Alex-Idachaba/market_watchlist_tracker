@@ -7,34 +7,28 @@ import pathlib
 import json
 import os
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 
 load_dotenv()
 API_KEY = os.getenv("API_KEY")
 symbols = ["AUD/USD", "EUR/USD", "EUR/JPY", "GBP/USD", "USD/JPY", "USD/CAD",
             "BTC/USD"]
-today_date = datetime.now(timezone.utc) - timedelta(days=1)
-start_date_custom_time = today_date.replace(hour=14, minute=7, second=0, microsecond=0)
-end_date_custom_time = today_date.replace(hour=14, minute=8, second=0, microsecond=0)
+today_date = datetime.now(timezone.utc) 
+raw_data_file_name = f"{str(today_date.date())}_raw.json"
+raw_data_path = Path.cwd() / "data" / "raw" / raw_data_file_name
 
-start_date = start_date_custom_time.isoformat()
-end_date = end_date_custom_time.isoformat()
-
-def fetch_price_data(symbol , api_key, start_date, end_date):
+def fetch_price_data(symbol , api_key):
 
     BASE_URL = (
         "https://api.twelvedata.com/time_series"
         "?apikey=" + api_key +
         "&symbol=" + symbol +
-        "&interval=1min" +
+        "&interval=1day" +
         "&outputsize=1" +
-        "&timezone=America/Argentina/Rio_Gallegos" +
-        "&start_date=" + start_date +
-        "&end_date=" + end_date +
+        "&timezone=America/New_York" +
         "&format=JSON"
     )
-
     try:
         response = requests.get(BASE_URL, timeout=10)
         response.raise_for_status()
@@ -49,12 +43,12 @@ def fetch_price_data(symbol , api_key, start_date, end_date):
         print(f"API returned an error: {e}")
         return None
 
-def fetch_watchlist_data(symbols, api_key, start_date, end_date):
+def fetch_watchlist_data(symbols, api_key):
 
     watchlist_data = {}
 
     for symbol in symbols:
-        response = fetch_price_data(symbol, api_key, start_date, end_date)
+        response = fetch_price_data(symbol, api_key)
         if not response:
             print(f"Could not fetch: {symbol} data")
             continue
@@ -63,20 +57,57 @@ def fetch_watchlist_data(symbols, api_key, start_date, end_date):
 
     return watchlist_data
 
-def save_raw_json(today_date, watchlist_data):
+def save_raw_json(watchlist_data, raw_data_file_name, raw_data_path):
     raw_folder_path = Path.cwd() / "data" / "raw"
-    raw_data_file_name = f"{str(today_date.date())}_raw.json"
-
     try:
         raw_folder_path.mkdir(parents=True, exist_ok=True)
-        with open(raw_folder_path / raw_data_file_name, "w") as file:
+        with open(raw_data_path, "w") as file:
             json.dump(watchlist_data, file)
-        print(f"{raw_data_file_name} written to {raw_folder_path}")
+        print(f"{raw_data_file_name} written to {raw_data_path}")
     except OSError as e:
         print(f"Failed to write Json file: {e}")
 
-watchlist_data = fetch_watchlist_data(symbols, API_KEY, start_date, end_date)
+def load_raw_json(filepath):
+    try:
+        with open(filepath, "r") as file:
+                    return json.load(file)
+    except OSError as e:
+        print(f"The specific file does not exist {e}")
+        return None
+    except json.JSONDecodeError as e:
+         print(f"The file exists but isn't valid JSON: {e}")
+         return None
 
-save_raw_json(today_date, watchlist_data)
+# fetch_price_data("XAU/USD" , API_KEY)            
+# watchlist_data = fetch_watchlist_data(symbols, API_KEY)
+# save_raw_json(watchlist_data, raw_data_file_name, raw_data_path)
+
+json_file = load_raw_json(raw_data_path)
 
 
+symbols_data_list = []
+
+list_of_keys = list(json_file.keys())
+
+for i in range(len(list_of_keys)):
+    trades_data = {
+        "symbol" : list_of_keys[i],
+        "datetime" : json_file[list_of_keys[i]]["values"][0]["datetime"],
+        "open" : float(json_file[list_of_keys[i]]["values"][0]["open"]),
+        "high" : float(json_file[list_of_keys[i]]["values"][0]["high"]),
+        "low" : float(json_file[list_of_keys[i]]["values"][0]["low"]),
+        "close" : float(json_file[list_of_keys[i]]["values"][0]["close"]),
+        }
+    symbols_data_list.append(trades_data)
+     
+print(symbols_data_list)
+
+
+
+# print(list_of_keys)
+# print(json_file[list_of_keys[0]])
+# print(json_file[list_of_keys[0]]["values"][0]["datetime"])
+# print(float(json_file[list_of_keys[0]]["values"][0]["open"]))
+# print(float(json_file[list_of_keys[0]]["values"][0]["high"]))
+# print(float(json_file[list_of_keys[0]]["values"][0]["low"]))
+# print(float(json_file[list_of_keys[0]]["values"][0]["close"]))
