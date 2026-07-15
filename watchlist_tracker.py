@@ -7,16 +7,16 @@ import pathlib
 import json
 import os
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 load_dotenv()
 API_KEY = os.getenv("API_KEY")
 symbols = ["AUD/USD", "EUR/USD", "EUR/JPY", "GBP/USD", "USD/JPY", "USD/CAD",
             "BTC/USD"]
-now = datetime.now() - timedelta(days=1)
-start_date_custom_time = now.replace(hour=14, minute=7, second=0, microsecond=0)
-end_date_custom_time = now.replace(hour=14, minute=8, second=0, microsecond=0)
+today_date = datetime.now(timezone.utc) - timedelta(days=1)
+start_date_custom_time = today_date.replace(hour=14, minute=7, second=0, microsecond=0)
+end_date_custom_time = today_date.replace(hour=14, minute=8, second=0, microsecond=0)
 
 start_date = start_date_custom_time.isoformat()
 end_date = end_date_custom_time.isoformat()
@@ -63,21 +63,20 @@ def fetch_watchlist_data(symbols, api_key, start_date, end_date):
 
     return watchlist_data
 
+def save_raw_json(today_date, watchlist_data):
+    raw_folder_path = Path.cwd() / "data" / "raw"
+    raw_data_file_name = f"{str(today_date.date())}_raw.json"
+
+    try:
+        raw_folder_path.mkdir(parents=True, exist_ok=True)
+        with open(raw_folder_path / raw_data_file_name, "w") as file:
+            json.dump(watchlist_data, file)
+        print(f"{raw_data_file_name} written to {raw_folder_path}")
+    except OSError as e:
+        print(f"Failed to write Json file: {e}")
 
 watchlist_data = fetch_watchlist_data(symbols, API_KEY, start_date, end_date)
 
-
-data = Path.cwd() / "data" / "raw"
-raw_data_file_name = f"{str(now.date())}_raw.json"
-
-if not data.exists():
-    data.mkdir(parents=True, exist_ok=True)
-
-try:
-    with open(data/raw_data_file_name, "w") as file:
-        json.dump(watchlist_data, file)
-    print(f"{raw_data_file_name} written to {data}")
-except OSError as e:
-    print(f"Failed to write Json file: {e}")
+save_raw_json(today_date, watchlist_data)
 
 
