@@ -6,9 +6,12 @@ import sqlite3
 import pathlib
 import json
 import os
+import time
 
 load_dotenv()
 API_KEY = os.getenv("API_KEY")
+symbols = ["AUD/USD", "EUR/USD", "EUR/JPY", "GBP/USD", "USD/JPY", "USD/CAD",
+            "BTC/USD"]
 
 def fetch_price_data(symbol , api_key):
 
@@ -38,5 +41,19 @@ def fetch_price_data(symbol , api_key):
         print(f"API returned an error: {e}")
         return None
 
-response = fetch_price_data("XAU/USD", API_KEY)
-print(response)
+def fetch_watchlist_data(symbols, api_key):
+
+    watchlist_data = {}
+
+    for symbol in symbols:
+        response = fetch_price_data(symbol, api_key)
+        if not response:
+            print(f"Could not fetch: {symbol} data")
+            continue
+        watchlist_data[symbol] = response
+        time.sleep(8)
+
+    return watchlist_data
+
+
+watch_data = fetch_watchlist_data(symbols, API_KEY)
