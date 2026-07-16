@@ -65,8 +65,10 @@ def save_raw_json(watchlist_data, raw_data_file_name, raw_data_path):
         with open(raw_data_path, "w") as file:
             json.dump(watchlist_data, file)
         print(f"{raw_data_file_name} written to {raw_data_path}")
+        return True
     except OSError as e:
         print(f"Failed to write Json file: {e}")
+        return False
 
 def load_raw_json(filepath):
     try:
@@ -118,7 +120,5 @@ def build_date_folder(base_path, date):
 # save_raw_json(watchlist_data, raw_data_file_name, raw_data_path)
 # json_file_content = load_raw_json(raw_data_path)
 # symbols_data_list = parse_watchlist_data(json_file_content)
-
-
 
 build_date_folder(base_path, today_date)
