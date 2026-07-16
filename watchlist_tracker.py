@@ -16,7 +16,8 @@ symbols = ["AUD/USD", "EUR/USD", "EUR/JPY", "GBP/USD", "USD/JPY", "USD/CAD",
             "BTC/USD"]
 today_date = datetime.now(timezone.utc) 
 raw_data_file_name = f"{str(today_date.date())}_raw.json"
-raw_data_path = Path.cwd() / "data" / "raw" / raw_data_file_name
+base_path = Path.cwd()
+raw_data_path = base_path / "data" / "raw" / raw_data_file_name
 
 def fetch_price_data(symbol , api_key):
 
@@ -103,13 +104,21 @@ def parse_watchlist_data(json_file_content):
 
     return symbols_data_list
 
+def build_date_folder(base_path, date):
+
+    year = date.strftime("%Y")
+    month = date.strftime("%m")
+
+    folder_path = base_path / "data" / year / month
+    folder_path.mkdir(parents=True , exist_ok=True)
+
+
 # fetch_price_data("XAU/USD" , API_KEY)            
 # watchlist_data = fetch_watchlist_data(symbols, API_KEY)
 # save_raw_json(watchlist_data, raw_data_file_name, raw_data_path)
-
-json_file_content = load_raw_json(raw_data_path)
-symbols_data_list = parse_watchlist_data(json_file_content)
-print(symbols_data_list)
+# json_file_content = load_raw_json(raw_data_path)
+# symbols_data_list = parse_watchlist_data(json_file_content)
 
 
 
+build_date_folder(base_path, today_date)
