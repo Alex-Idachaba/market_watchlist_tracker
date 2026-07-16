@@ -138,6 +138,7 @@ def archive_daily_files(source_paths, destination_folder):
     return destination_folder
 
 
+
 # fetch_price_data("XAU/USD" , API_KEY)            
 # watchlist_data = fetch_watchlist_data(symbols, API_KEY)
 # save_raw_json(watchlist_data, raw_data_file_name, raw_data_path)
