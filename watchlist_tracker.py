@@ -9,6 +9,8 @@ import os
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+import shutil
+
 
 load_dotenv()
 API_KEY = os.getenv("API_KEY")
@@ -120,6 +122,16 @@ def build_date_folder(base_path, date):
     
     return folder_path
 
+def archive_daily_files(source_paths, destination_folder):
+
+    try:
+        shutil.move(source_paths, destination_folder)
+    except OSError as e:
+        print(f"Could not move file to destination folder: {e}")
+        return None
+    return destination_folder
+
+
 # fetch_price_data("XAU/USD" , API_KEY)            
 # watchlist_data = fetch_watchlist_data(symbols, API_KEY)
 # save_raw_json(watchlist_data, raw_data_file_name, raw_data_path)
@@ -127,3 +139,4 @@ def build_date_folder(base_path, date):
 # symbols_data_list = parse_watchlist_data(json_file_content)
 
 folder_path = build_date_folder(base_path, today_date)
+archive_daily_files(raw_data_path, folder_path)
