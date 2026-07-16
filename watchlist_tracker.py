@@ -110,10 +110,15 @@ def build_date_folder(base_path, date):
 
     year = date.strftime("%Y")
     month = date.strftime("%m")
-
     folder_path = base_path / "data" / year / month
-    folder_path.mkdir(parents=True , exist_ok=True)
 
+    try:
+        folder_path.mkdir(parents=True , exist_ok=True)
+    except OSError as e:
+        print(f"Failed to create folder: {e}")
+        return None
+    
+    return folder_path
 
 # fetch_price_data("XAU/USD" , API_KEY)            
 # watchlist_data = fetch_watchlist_data(symbols, API_KEY)
@@ -121,4 +126,4 @@ def build_date_folder(base_path, date):
 # json_file_content = load_raw_json(raw_data_path)
 # symbols_data_list = parse_watchlist_data(json_file_content)
 
-build_date_folder(base_path, today_date)
+folder_path = build_date_folder(base_path, today_date)
