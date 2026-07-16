@@ -124,11 +124,17 @@ def build_date_folder(base_path, date):
 
 def archive_daily_files(source_paths, destination_folder):
 
-    try:
-        shutil.move(source_paths, destination_folder)
-    except OSError as e:
-        print(f"Could not move file to destination folder: {e}")
+    if destination_folder is None:
+        print("Cannot archive files: destination folder was not created")
         return None
+    
+    for source_path in source_paths:
+        try:
+            shutil.move(source_path, destination_folder)
+        except OSError as e:
+            print(f"Could not move {source_path} to destination folder: {e}")
+            return 
+        
     return destination_folder
 
 
@@ -139,4 +145,6 @@ def archive_daily_files(source_paths, destination_folder):
 # symbols_data_list = parse_watchlist_data(json_file_content)
 
 folder_path = build_date_folder(base_path, today_date)
-archive_daily_files(raw_data_path, folder_path)
+archive_daily_files([raw_data_path], folder_path)
+
+   
