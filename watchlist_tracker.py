@@ -82,22 +82,26 @@ def parse_watchlist_data(json_file_content):
 
     symbols_data_list = []
 
-    try:
-        list_of_keys = list(json_file_content.keys())
-        for i in range(len(list_of_keys)):
-            trades_data = {
-                "symbol" : list_of_keys[i],
-                "datetime" : json_file_content[list_of_keys[i]]["values"][0]["datetime"],
-                "open" : float(json_file_content[list_of_keys[i]]["values"][0]["open"]),
-                "high" : float(json_file_content[list_of_keys[i]]["values"][0]["high"]),
-                "low" : float(json_file_content[list_of_keys[i]]["values"][0]["low"]),
-                "close" : float(json_file_content[list_of_keys[i]]["values"][0]["close"]),
-                }
-            symbols_data_list.append(trades_data)
-        return symbols_data_list    
-    except KeyError as e:
-        print(f"Json file content is missing an expected field: {e}")
+    for symbol in json_file_content:
+        symbol_data = json_file_content[symbol]
 
+        if symbol_data is None:
+            print(f"Skipping {symbol}: no data was fetched for this symbol")
+        try:     
+            trades_data = {
+                "instrument" : symbol,
+                "date" : symbol_data["values"][0]["datetime"],
+                "open" : float(symbol_data["values"][0]["open"]),
+                "high" : float(symbol_data["values"][0]["high"]),
+                "low" : float(symbol_data["values"][0]["low"]),
+                "close" : float(symbol_data["values"][0]["close"]),
+                }
+            symbols_data_list.append(trades_data)    
+        except KeyError as e:
+            print(f"Json file content is missing an expected field: {e}")
+            continue
+
+    return symbols_data_list
 
 # fetch_price_data("XAU/USD" , API_KEY)            
 # watchlist_data = fetch_watchlist_data(symbols, API_KEY)
