@@ -78,36 +78,34 @@ def load_raw_json(filepath):
          print(f"The file exists but isn't valid JSON: {e}")
          return None
 
+def parse_watchlist_data(json_file_content):
+
+    symbols_data_list = []
+
+    try:
+        list_of_keys = list(json_file_content.keys())
+        for i in range(len(list_of_keys)):
+            trades_data = {
+                "symbol" : list_of_keys[i],
+                "datetime" : json_file_content[list_of_keys[i]]["values"][0]["datetime"],
+                "open" : float(json_file_content[list_of_keys[i]]["values"][0]["open"]),
+                "high" : float(json_file_content[list_of_keys[i]]["values"][0]["high"]),
+                "low" : float(json_file_content[list_of_keys[i]]["values"][0]["low"]),
+                "close" : float(json_file_content[list_of_keys[i]]["values"][0]["close"]),
+                }
+            symbols_data_list.append(trades_data)
+        return symbols_data_list    
+    except KeyError as e:
+        print(f"Json file content is missing an expected field: {e}")
+
+
 # fetch_price_data("XAU/USD" , API_KEY)            
 # watchlist_data = fetch_watchlist_data(symbols, API_KEY)
 # save_raw_json(watchlist_data, raw_data_file_name, raw_data_path)
 
-json_file = load_raw_json(raw_data_path)
-
-
-symbols_data_list = []
-
-list_of_keys = list(json_file.keys())
-
-for i in range(len(list_of_keys)):
-    trades_data = {
-        "symbol" : list_of_keys[i],
-        "datetime" : json_file[list_of_keys[i]]["values"][0]["datetime"],
-        "open" : float(json_file[list_of_keys[i]]["values"][0]["open"]),
-        "high" : float(json_file[list_of_keys[i]]["values"][0]["high"]),
-        "low" : float(json_file[list_of_keys[i]]["values"][0]["low"]),
-        "close" : float(json_file[list_of_keys[i]]["values"][0]["close"]),
-        }
-    symbols_data_list.append(trades_data)
-     
+json_file_content = load_raw_json(raw_data_path)
+symbols_data_list = parse_watchlist_data(json_file_content)
 print(symbols_data_list)
 
 
 
-# print(list_of_keys)
-# print(json_file[list_of_keys[0]])
-# print(json_file[list_of_keys[0]]["values"][0]["datetime"])
-# print(float(json_file[list_of_keys[0]]["values"][0]["open"]))
-# print(float(json_file[list_of_keys[0]]["values"][0]["high"]))
-# print(float(json_file[list_of_keys[0]]["values"][0]["low"]))
-# print(float(json_file[list_of_keys[0]]["values"][0]["close"]))
