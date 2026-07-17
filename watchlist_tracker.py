@@ -146,6 +146,37 @@ def archive_daily_files(source_paths, destination_folder):
 
     return destination_folder
 
+def init_database(db_path):
+
+    db_file = "watchlist_history.db"
+
+    try:
+        db_path.mkdir(parents=True, exist_ok=True)
+    except OSError as e:
+        print(f"Failed to create folder: {e}")
+        return None
+
+    connection = sqlite3.connect(db_path / db_file)
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS daily_prices (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            instrument TEXT NOT NULL,
+            date TEXT,
+            open REAL,
+            high REAL,
+            low REAL,
+            close REAL    
+        )
+    """)
+
+    connection.commit()
+    connection.close()
+
+    return db_path / db_file
+
+
 
 # fetch_price_data("XAU/USD" , API_KEY)
 # watchlist_data = fetch_watchlist_data(symbols, API_KEY)
@@ -156,25 +187,5 @@ def archive_daily_files(source_paths, destination_folder):
 # folder_path = build_date_folder(base_path, today_date)
 # archive_daily_files([raw_data_path], folder_path)
 
-try:
-    db_path.mkdir(parents=True, exist_ok=True)
-except OSError as e:
-    print(f"Failed to create folder: {e}")
-
-connection = sqlite3.connect(db_path / "watchlist_history.db")
-cursor = connection.cursor()
-
-cursor.execute("""
-    CREATE TABLE IF NOT EXISTS daily_prices (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        instrument TEXT NOT NULL,
-        date TEXT,
-        open REAL,
-        high REAL,
-        low REAL,
-        close REAL    
-    )
-""")
-
-connection.commit()
-connection.close()
+database_file_path = init_database(db_path)
+print(database_file_path)
