@@ -149,6 +149,7 @@ def archive_daily_files(source_paths, destination_folder):
 def init_database(db_path):
 
     db_file = "watchlist_history.db"
+    connection = None
 
     try:
         db_path.mkdir(parents=True, exist_ok=True)
@@ -175,7 +176,8 @@ def init_database(db_path):
         print(f"Failed to setup the database: {e}")
         return None
     finally:
-         connection.close()
+         if connection is not None:
+             connection.close()
 
 def record_exists(db_path, instrument, date):
 
