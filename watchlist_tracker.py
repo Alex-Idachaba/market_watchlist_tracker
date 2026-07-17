@@ -177,8 +177,32 @@ def init_database(db_path):
     finally:
          connection.close()
 
+def record_exists(db_path, instrument, date):
 
-# fetch_price_data("XAU/USD" , API_KEY)
+    connection = None
+
+    try:
+        connection = sqlite3.connect(db_path)
+        cursor = connection.cursor()
+        cursor.execute("SELECT * FROM daily_prices WHERE instrument = ? AND date = ?",
+                        (instrument, date))
+        result = cursor.fetchone()
+
+        if result is not None:
+            return True
+        else:
+            return False
+        
+    except sqlite3.Error as e:
+        print(f"Failed to check the database{e}")
+        return False
+    finally:
+        if connection is not None:
+            connection.close()
+    
+
+
+    # fetch_price_data("XAU/USD" , API_KEY)
 # watchlist_data = fetch_watchlist_data(symbols, API_KEY)
 # save_raw_json(watchlist_data, raw_data_file_name, raw_data_path)
 # json_file_content = load_raw_json(raw_data_path)
@@ -187,5 +211,5 @@ def init_database(db_path):
 # folder_path = build_date_folder(base_path, today_date)
 # archive_daily_files([raw_data_path], folder_path)
 
+
 database_file_path = init_database(db_path)
-print(database_file_path)
