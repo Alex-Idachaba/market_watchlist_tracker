@@ -155,27 +155,27 @@ def init_database(db_path):
     except OSError as e:
         print(f"Failed to create folder: {e}")
         return None
-
-    connection = sqlite3.connect(db_path / db_file)
-    cursor = connection.cursor()
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS daily_prices (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            instrument TEXT NOT NULL,
-            date TEXT,
-            open REAL,
-            high REAL,
-            low REAL,
-            close REAL    
-        )
-    """)
-
-    connection.commit()
-    connection.close()
-
-    return db_path / db_file
-
+    try:
+        connection = sqlite3.connect(db_path / db_file)
+        cursor = connection.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS daily_prices (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                instrument TEXT NOT NULL,
+                date TEXT NOT NULL,
+                open REAL,
+                high REAL,
+                low REAL,
+                close REAL    
+            )
+        """)
+        connection.commit()
+        return db_path / db_file
+    except sqlite3.Error as e:
+        print(f"Failed to setup the database: {e}")
+        return None
+    finally:
+         connection.close()
 
 
 # fetch_price_data("XAU/USD" , API_KEY)
