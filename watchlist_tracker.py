@@ -23,7 +23,10 @@ db_path = base_path / "data" / "database"
 
 
 def fetch_price_data(symbol, api_key):
-
+    """
+    Fetch daily time series data for a single instrument from Twelve Data.
+    Returns the raw JSON response as a dict, or None on failure.
+    """
     BASE_URL = (
         "https://api.twelvedata.com/time_series"
         "?apikey="
@@ -51,7 +54,10 @@ def fetch_price_data(symbol, api_key):
 
 
 def fetch_watchlist_data(symbols, api_key):
-
+    """
+    Loop through a list of instrument symbols and fetch data for each.
+    Returns a dict mapping symbol -> raw JSON response (or None if that symbol failed).
+    """
     watchlist_data = {}
 
     for symbol in symbols:
@@ -66,6 +72,10 @@ def fetch_watchlist_data(symbols, api_key):
 
 
 def save_raw_json(watchlist_data, raw_data_file_name, raw_data_path):
+    """
+    Write raw API response data to a JSON file at the given path.
+    Returns True if the write succeeded, False otherwise.
+    """
     raw_folder_path = Path.cwd() / "data" / "raw"
     try:
         raw_folder_path.mkdir(parents=True, exist_ok=True)
@@ -79,6 +89,9 @@ def save_raw_json(watchlist_data, raw_data_file_name, raw_data_path):
 
 
 def load_raw_json(filepath):
+    """
+    Read a cached JSON file from disk and return it as a dict.
+    """    
     try:
         with open(filepath, "r") as file:
             return json.load(file)
@@ -91,7 +104,10 @@ def load_raw_json(filepath):
 
 
 def parse_watchlist_data(json_file_content):
-
+    """
+    Convert raw per-symbol JSON responses into a flat list of dictionaries,
+    one per instrument per day.
+    """
     symbols_data_list = []
 
     for symbol in json_file_content:
@@ -117,7 +133,10 @@ def parse_watchlist_data(json_file_content):
 
 
 def build_date_folder(base_path, date):
-
+    """
+    Construct (and create if needed) a year/month folder path under base_path
+    for the given date. Returns the folder as a Path object.
+    """
     year = date.strftime("%Y")
     month = date.strftime("%m")
     folder_path = base_path / "data" / year / month
@@ -132,7 +151,9 @@ def build_date_folder(base_path, date):
 
 
 def archive_daily_files(source_paths, destination_folder):
-
+    """
+    Move or copy the given files into the destination folder.
+    """
     if destination_folder is None:
         print("Cannot archive files: destination folder was not created")
         return None
@@ -147,7 +168,9 @@ def archive_daily_files(source_paths, destination_folder):
     return destination_folder
 
 def init_database(db_path):
-
+    """
+    Create the SQLite database and daily_prices table if they don't already exist.
+    """
     db_file = "watchlist_history.db"
     connection = None
 
@@ -182,7 +205,10 @@ def init_database(db_path):
              connection.close()
 
 def record_exists(db_path, instrument, date):
-
+    """
+    Check whether a row for this instrument and date already exists.
+    Returns True or False.
+    """
     connection = None
 
     try:
@@ -206,7 +232,10 @@ def record_exists(db_path, instrument, date):
             connection.close()
     
 def insert_daily_records(db_path, records):
-
+    """
+    Insert a list of parsed records into the daily_prices table,
+    skipping any that already exist for that instrument/date.
+    """
     connection = None
 
     try:
@@ -243,14 +272,15 @@ def insert_daily_records(db_path, records):
             connection.close()
 
 
-fetch_price_data("XAU/USD" , API_KEY)
-watchlist_data = fetch_watchlist_data(symbols, API_KEY)
-save_raw_json(watchlist_data, raw_data_file_name, raw_data_path)
-json_file_content = load_raw_json(raw_data_path)
-symbols_data_list = parse_watchlist_data(json_file_content)
-folder_path = build_date_folder(base_path, today_date)
-archive_daily_files([raw_data_path], folder_path)
+# fetch_price_data("XAU/USD" , API_KEY)
+# watchlist_data = fetch_watchlist_data(symbols, API_KEY)
+# save_raw_json(watchlist_data, raw_data_file_name, raw_data_path)
+# json_file_content = load_raw_json(raw_data_path)
+# symbols_data_list = parse_watchlist_data(json_file_content)
+# folder_path = build_date_folder(base_path, today_date)
+# archive_daily_files([raw_data_path], folder_path)
 
-database_file_path = init_database(db_path)
-# record_exists(database_file_path, "AUD/USD", "2026-07-16")
-insert_daily_records(database_file_path, symbols_data_list)
+# database_file_path = init_database(db_path)
+# # record_exists(database_file_path, "AUD/USD", "2026-07-16")
+# insert_daily_records(database_file_path, symbols_data_list)
+
