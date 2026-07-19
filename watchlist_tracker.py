@@ -204,14 +204,48 @@ def record_exists(db_path, instrument, date):
     
 
 
-    # fetch_price_data("XAU/USD" , API_KEY)
-# watchlist_data = fetch_watchlist_data(symbols, API_KEY)
-# save_raw_json(watchlist_data, raw_data_file_name, raw_data_path)
-# json_file_content = load_raw_json(raw_data_path)
-# symbols_data_list = parse_watchlist_data(json_file_content)
+fetch_price_data("XAU/USD" , API_KEY)
+watchlist_data = fetch_watchlist_data(symbols, API_KEY)
+save_raw_json(watchlist_data, raw_data_file_name, raw_data_path)
+json_file_content = load_raw_json(raw_data_path)
+symbols_data_list = parse_watchlist_data(json_file_content)
 
-# folder_path = build_date_folder(base_path, today_date)
-# archive_daily_files([raw_data_path], folder_path)
-
+folder_path = build_date_folder(base_path, today_date)
+archive_daily_files([raw_data_path], folder_path)
 
 database_file_path = init_database(db_path)
+
+# result = record_exists(database_file_path, "AUD/USD", "2026-07-16")
+
+
+connection = None
+
+try:
+
+    connection = sqlite3.connect(database_file_path)
+    cursor = connection.cursor()
+
+    for row in symbols_data_list:
+        instrument = row["instrument"]
+        date = row["date"]
+        open = float(row["open"])
+        high = float(row["high"])
+        low = float(row["low"])
+        close = float(row["close"])
+        
+        result = record_exists(database_file_path, instrument, date)
+
+        if result is not True:
+            cursor.execute(
+                "INSERT INTO daily_prices VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (None, instrument, date, open, high, low, close)
+            )
+    connection.commit()
+    print("Daily Prices successfully inserted into database.")
+except sqlite3.Error as e:
+    print(f"Failed to insert values into database: {e}")
+finally:
+    if connection is not None:
+        connection.close()
+
+        
