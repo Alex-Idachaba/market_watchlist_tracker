@@ -271,17 +271,47 @@ def insert_daily_records(db_path, records):
         if connection is not None:
             connection.close()
 
+def fetch_last_n_days(db_path, n_days):
+    """
+    Query the daily_prices table for the last n_days of data.
+    Returns a list of records.
+    """
+    connection = None
 
-fetch_price_data("XAU/USD" , API_KEY)
-watchlist_data = fetch_watchlist_data(symbols, API_KEY)
-save_raw_json(watchlist_data, raw_data_file_name, raw_data_path)
-json_file_content = load_raw_json(raw_data_path)
-symbols_data_list = parse_watchlist_data(json_file_content)
-folder_path = build_date_folder(base_path, today_date)
-archive_daily_files([raw_data_path], folder_path)
+    try:
+        connection = sqlite3.connect(db_path)
+        cursor = connection.cursor()
+
+        cursor.execute(
+            """
+            SELECT * 
+            FROM daily_prices
+            WHERE date >= date('now', '-' || ? || ' days')
+            ORDER BY date DESC;
+            """,
+            (n_days,)
+        )
+        rows = cursor.fetchall()
+        return rows
+    
+    except sqlite3.Error as e:
+        print(f"Failed to retrieve data: {e}")
+        return None
+
+    finally:
+        if connection is not None:
+            connection.close()
+
+
+# fetch_price_data("XAU/USD" , API_KEY)
+# watchlist_data = fetch_watchlist_data(symbols, API_KEY)
+# save_raw_json(watchlist_data, raw_data_file_name, raw_data_path)
+# json_file_content = load_raw_json(raw_data_path)
+# symbols_data_list = parse_watchlist_data(json_file_content)
+# folder_path = build_date_folder(base_path, today_date)
+# archive_daily_files([raw_data_path], folder_path)
 
 database_file_path = init_database(db_path)
-record_exists(database_file_path, instrument="", date="")
-insert_daily_records(database_file_path, symbols_data_list)
-
-print(symbols_data_list)
+# record_exists(database_file_path, instrument="", date="")
+# insert_daily_records(database_file_path, symbols_data_list)
+rows = fetch_last_n_days(database_file_path, 2)
