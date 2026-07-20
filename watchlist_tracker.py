@@ -204,7 +204,7 @@ def init_database(db_path):
          if connection is not None:
              connection.close()
 
-def record_exists(db_path, instrument, date):
+def record_exists(db_path, instrument="", date=""):
     """
     Check whether a row for this instrument and date already exists.
     Returns True or False.
@@ -251,7 +251,7 @@ def insert_daily_records(db_path, records):
             low = float(row["low"])
             close = float(row["close"])
             
-            already_exists = record_exists(db_path, instrument, date)
+            already_exists = record_exists(db_path, instrument=instrument, date=date)
 
             if already_exists is not True:
                 cursor.execute(
@@ -272,15 +272,16 @@ def insert_daily_records(db_path, records):
             connection.close()
 
 
-# fetch_price_data("XAU/USD" , API_KEY)
-# watchlist_data = fetch_watchlist_data(symbols, API_KEY)
-# save_raw_json(watchlist_data, raw_data_file_name, raw_data_path)
-# json_file_content = load_raw_json(raw_data_path)
-# symbols_data_list = parse_watchlist_data(json_file_content)
-# folder_path = build_date_folder(base_path, today_date)
-# archive_daily_files([raw_data_path], folder_path)
+fetch_price_data("XAU/USD" , API_KEY)
+watchlist_data = fetch_watchlist_data(symbols, API_KEY)
+save_raw_json(watchlist_data, raw_data_file_name, raw_data_path)
+json_file_content = load_raw_json(raw_data_path)
+symbols_data_list = parse_watchlist_data(json_file_content)
+folder_path = build_date_folder(base_path, today_date)
+archive_daily_files([raw_data_path], folder_path)
 
-# database_file_path = init_database(db_path)
-# # record_exists(database_file_path, "AUD/USD", "2026-07-16")
-# insert_daily_records(database_file_path, symbols_data_list)
+database_file_path = init_database(db_path)
+record_exists(database_file_path, instrument="", date="")
+insert_daily_records(database_file_path, symbols_data_list)
 
+print(symbols_data_list)
