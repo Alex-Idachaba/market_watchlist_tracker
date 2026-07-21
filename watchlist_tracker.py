@@ -1,7 +1,7 @@
 import requests
 import dotenv
 from dotenv import load_dotenv
-import openpyxl
+from openpyxl import Workbook
 import sqlite3
 import pathlib
 import json
@@ -314,4 +314,45 @@ def fetch_last_n_days(db_path, n_days):
 database_file_path = init_database(db_path)
 # record_exists(database_file_path, instrument="", date="")
 # insert_daily_records(database_file_path, symbols_data_list)
-rows = fetch_last_n_days(database_file_path, 2)
+rows = fetch_last_n_days(database_file_path, 3)
+
+
+
+
+grid_data = {}
+
+for row in rows:
+    instrument = row[1]
+    date = row[2]
+    close = row[6]
+
+    if date not in grid_data:
+        grid_data[date] = {}
+    grid_data[date][instrument] = close
+
+workbook = Workbook()
+sheet = workbook.active
+
+dates = list(grid_data.keys())
+instruments = ["AUD/USD", "EUR/USD", "EUR/JPY", "GBP/USD", "USD/JPY", "USD/CAD", "BTC/USD"]
+
+sheet.cell(row=1, column=1, value="Date")
+
+for col_index, instrument in enumerate(instruments, start=2):
+    sheet.cell(row=1, column=col_index, value=instrument)
+
+for row_index, date in enumerate(dates, start=2):
+    sheet.cell(row=row_index, column=1, value=date)
+
+    for row_index, date in enumerate(dates, start=2):
+        for col_index, instrument in enumerate(instruments, start=2):
+            day_data = grid_data.get(date, {})
+            close_price = day_data.get(instrument, None)
+            sheet.cell(row=row_index, column=col_index, value=close_price)
+            workbook.save("test_reports.xlsx")
+        
+
+
+
+
+
