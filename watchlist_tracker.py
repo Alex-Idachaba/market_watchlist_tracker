@@ -2,6 +2,7 @@ import requests
 import dotenv
 from dotenv import load_dotenv
 from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill
 import sqlite3
 import pathlib
 import json
@@ -11,16 +12,19 @@ from datetime import datetime, timezone
 from pathlib import Path
 import shutil
 
-
 load_dotenv()
 API_KEY = os.getenv("API_KEY")
-symbols = ["AUD/USD", "EUR/USD", "EUR/JPY", "GBP/USD", "USD/JPY", "USD/CAD", "BTC/USD"]
+
+symbols = ["AUD/USD", "EUR/USD", "EUR/JPY", "GBP/USD", "USD/JPY", "USD/CAD", 
+           "BTC/USD"]
+
 today_date = datetime.now(timezone.utc)
 raw_data_file_name = f"{str(today_date.date())}_raw.json"
+
 base_path = Path.cwd()
 raw_data_path = base_path / "data" / "raw" / raw_data_file_name
 db_path = base_path / "data" / "database"
-
+reports_folder = base_path / "reports"
 
 def fetch_price_data(symbol, api_key):
     """
@@ -52,7 +56,6 @@ def fetch_price_data(symbol, api_key):
         print(f"API returned an error: {e}")
         return None
 
-
 def fetch_watchlist_data(symbols, api_key):
     """
     Loop through a list of instrument symbols and fetch data for each.
@@ -70,7 +73,6 @@ def fetch_watchlist_data(symbols, api_key):
 
     return watchlist_data
 
-
 def save_raw_json(watchlist_data, raw_data_file_name, raw_data_path):
     """
     Write raw API response data to a JSON file at the given path.
@@ -87,7 +89,6 @@ def save_raw_json(watchlist_data, raw_data_file_name, raw_data_path):
         print(f"Failed to write Json file: {e}")
         return False
 
-
 def load_raw_json(filepath):
     """
     Read a cached JSON file from disk and return it as a dict.
@@ -101,7 +102,6 @@ def load_raw_json(filepath):
     except json.JSONDecodeError as e:
         print(f"The file exists but isn't valid JSON: {e}")
         return None
-
 
 def parse_watchlist_data(json_file_content):
     """
@@ -131,7 +131,6 @@ def parse_watchlist_data(json_file_content):
 
     return symbols_data_list
 
-
 def build_date_folder(base_path, date):
     """
     Construct (and create if needed) a year/month folder path under base_path
@@ -148,7 +147,6 @@ def build_date_folder(base_path, date):
         return None
 
     return folder_path
-
 
 def archive_daily_files(source_paths, destination_folder):
     """
@@ -302,57 +300,99 @@ def fetch_last_n_days(db_path, n_days):
         if connection is not None:
             connection.close()
 
+def build_weekly_report(records, output_path):
+    """
+    Build and save a formatted Excel workbook summarizing the given records.
+    """
+    instruments = ["AUD/USD", "EUR/USD", "EUR/JPY", "GBP/USD", "USD/JPY", "USD/CAD",
+                    "BTC/USD"]
 
-# fetch_price_data("XAU/USD" , API_KEY)
-# watchlist_data = fetch_watchlist_data(symbols, API_KEY)
-# save_raw_json(watchlist_data, raw_data_file_name, raw_data_path)
-# json_file_content = load_raw_json(raw_data_path)
-# symbols_data_list = parse_watchlist_data(json_file_content)
-# folder_path = build_date_folder(base_path, today_date)
-# archive_daily_files([raw_data_path], folder_path)
+    grid_data = {}
+    range_data = {}
 
-database_file_path = init_database(db_path)
-# record_exists(database_file_path, instrument="", date="")
-# insert_daily_records(database_file_path, symbols_data_list)
-rows = fetch_last_n_days(database_file_path, 3)
+    for row in records:
+        instrument = row[1]
+        date = row[2]
+        high = row[4]
+        low = row[5]
+        close = row[6]
 
+        if date not in grid_data:
+            grid_data[date] = {}
+        grid_data[date][instrument] = close
 
+        if date not in range_data:
+            range_data[date] = {}
+        range_data[date][instrument] = (high - low) / close
 
+    dates = sorted(grid_data.keys())
 
-grid_data = {}
+    start_date = dates[0]
+    end_date_full = dates[-1]
+    end_date_short = end_date_full[5:]
+    filename = f"week_{start_date}_to_{end_date_short}.xlsx"
+    full_output_path = output_path / filename
 
-for row in rows:
-    instrument = row[1]
-    date = row[2]
-    close = row[6]
+    try:
+        workbook = Workbook()
+        sheet = workbook.active
 
-    if date not in grid_data:
-        grid_data[date] = {}
-    grid_data[date][instrument] = close
+        bold_font = Font(bold=True)
+        large_range_fill = PatternFill(start_color="FFFF00", end_color="FFFF00",
+                                        fill_type="solid")
 
-workbook = Workbook()
-sheet = workbook.active
+        sheet.cell(row=1, column=1, value="Date").font = bold_font
 
-dates = list(grid_data.keys())
-instruments = ["AUD/USD", "EUR/USD", "EUR/JPY", "GBP/USD", "USD/JPY", "USD/CAD", "BTC/USD"]
-
-sheet.cell(row=1, column=1, value="Date")
-
-for col_index, instrument in enumerate(instruments, start=2):
-    sheet.cell(row=1, column=col_index, value=instrument)
-
-for row_index, date in enumerate(dates, start=2):
-    sheet.cell(row=row_index, column=1, value=date)
-
-    for row_index, date in enumerate(dates, start=2):
         for col_index, instrument in enumerate(instruments, start=2):
-            day_data = grid_data.get(date, {})
-            close_price = day_data.get(instrument, None)
-            sheet.cell(row=row_index, column=col_index, value=close_price)
-            workbook.save("test_reports.xlsx")
-        
+            sheet.cell(row=1, column=col_index, value=instrument).font = bold_font
 
+        for row_index, date in enumerate(dates, start=2):
+            sheet.cell(row=row_index, column=1, value=date).font = bold_font
 
+            for col_index, instrument in enumerate(instruments, start=2):
+                day_data = grid_data.get(date, {})
+                close_price = day_data.get(instrument, None)
+                cell = sheet.cell(row=row_index, column=col_index, 
+                                  value=close_price)
 
+                day_range_data = range_data.get(date, {})
+                range_percent = day_range_data.get(instrument, None)
 
+                if range_percent is not None:
+                    threshold = 0.03 if "BTC" in instrument else 0.01
+                    if range_percent > threshold:
+                        cell.fill = large_range_fill
 
+        sheet.column_dimensions["A"].width = 12
+        for col_index in range(2, len(instruments) + 2):
+            column_letter = sheet.cell(row=1, column=col_index).column_letter
+            sheet.column_dimensions[column_letter].width = 12
+
+        workbook.save(full_output_path)
+        print(f"Weekly report saved to {full_output_path}")
+        return True
+
+    except OSError as e:
+        print(f"Failed to save the report: {e}")
+        return False
+
+def main():
+
+    # fetch_price_data("XAU/USD" , API_KEY)
+    # watchlist_data = fetch_watchlist_data(symbols, API_KEY)
+    # save_raw_json(watchlist_data, raw_data_file_name, raw_data_path)
+    # json_file_content = load_raw_json(raw_data_path)
+    # symbols_data_list = parse_watchlist_data(json_file_content)
+    # folder_path = build_date_folder(base_path, today_date)
+    # archive_daily_files([raw_data_path], folder_path)
+
+    database_file_path = init_database(db_path)
+    # record_exists(database_file_path, instrument="", date="")
+    # insert_daily_records(database_file_path, symbols_data_list)
+    rows = fetch_last_n_days(database_file_path, 3)
+
+    reports_folder.mkdir(parents=True, exist_ok=True)
+    build_weekly_report(rows, reports_folder)
+
+if __name__ == "__main__":
+    main()
