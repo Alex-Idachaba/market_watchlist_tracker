@@ -1,10 +1,8 @@
 import requests
-import dotenv
 from dotenv import load_dotenv
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 import sqlite3
-import pathlib
 import json
 import os
 import time
@@ -85,6 +83,7 @@ def save_raw_json(watchlist_data, raw_data_file_name, raw_data_path):
             json.dump(watchlist_data, file)
         print(f"{raw_data_file_name} written to {raw_data_path}")
         return True
+    
     except OSError as e:
         print(f"Failed to write Json file: {e}")
         return False
@@ -115,6 +114,7 @@ def parse_watchlist_data(json_file_content):
 
         if symbol_data is None:
             print(f"Skipping {symbol}: no data was fetched for this symbol")
+            continue
         try:
             trades_data = {
                 "instrument": symbol,
@@ -161,7 +161,7 @@ def archive_daily_files(source_paths, destination_folder):
             shutil.move(source_path, destination_folder)
         except OSError as e:
             print(f"Could not move {source_path} to destination folder: {e}")
-            return
+            continue
 
     return destination_folder
 
@@ -263,7 +263,7 @@ def insert_daily_records(db_path, records):
     
     except sqlite3.Error as e:
         print(f"Failed to insert values into database: {e}")
-        return None
+        return False
     
     finally:
         if connection is not None:
@@ -377,19 +377,49 @@ def build_weekly_report(records, output_path):
         return False
 
 def main():
+    
+    watchlist_data = fetch_watchlist_data(symbols, API_KEY)
+    if not watchlist_data:
+        print("Could not fetch the watchlist data: Exiting.")
+        return
 
-    # fetch_price_data("XAU/USD" , API_KEY)
-    # watchlist_data = fetch_watchlist_data(symbols, API_KEY)
-    # save_raw_json(watchlist_data, raw_data_file_name, raw_data_path)
-    # json_file_content = load_raw_json(raw_data_path)
-    # symbols_data_list = parse_watchlist_data(json_file_content)
-    # folder_path = build_date_folder(base_path, today_date)
-    # archive_daily_files([raw_data_path], folder_path)
+    save_successful = save_raw_json(watchlist_data, raw_data_file_name, raw_data_path)
+    if not save_successful:
+        print("Save failed, skipping load: Exiting.")
+        return
+
+    json_file_content = load_raw_json(raw_data_path)
+    if not json_file_content:
+        print("No json file to fetch: Exiting.")
+        return
+
+
+    symbols_data_list = parse_watchlist_data(json_file_content)
+    if not symbols_data_list:
+        print("Failed to parse symbols data: Exiting.")
+        return
+
+    folder_path = build_date_folder(base_path, today_date)
+    if not folder_path:
+        print("No folder created: Exiting.")
+        return
+
+    archive_daily_files([raw_data_path], folder_path)
 
     database_file_path = init_database(db_path)
-    # record_exists(database_file_path, instrument="", date="")
-    # insert_daily_records(database_file_path, symbols_data_list)
+    if not database_file_path:
+        print("No database created: Exiting.")
+        return
+
+    insert_successful = insert_daily_records(database_file_path, symbols_data_list)
+    if not insert_successful:
+        print("Insert failed: today's records were not saved. Exiting.")
+        return
+
     rows = fetch_last_n_days(database_file_path, 3)
+    if not rows:
+        print("Could not fetch last_n days of data: Exiting.")
+        return
 
     reports_folder.mkdir(parents=True, exist_ok=True)
     build_weekly_report(rows, reports_folder)
