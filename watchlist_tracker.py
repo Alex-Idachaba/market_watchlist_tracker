@@ -157,7 +157,11 @@ def archive_daily_files(source_paths, destination_folder):
         return None
 
     for source_path in source_paths:
+        destination_path = destination_folder / source_path.name
+
         try:
+            if destination_path.exists():
+                destination_path.unlink()
             shutil.move(source_path, destination_folder)
         except OSError as e:
             print(f"Could not move {source_path} to destination folder: {e}")
@@ -416,7 +420,7 @@ def main():
         print("Insert failed: today's records were not saved. Exiting.")
         return
 
-    rows = fetch_last_n_days(database_file_path, 3)
+    rows = fetch_last_n_days(database_file_path, 7)
     if not rows:
         print("Could not fetch last_n days of data: Exiting.")
         return
@@ -426,3 +430,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
